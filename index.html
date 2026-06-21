@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>บัญชีร้าน · แดชบอร์ดยอดขาย</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Taviraj:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg-base:#0F1E18;
+    --bg-surface:#15281F;
+    --bg-surface-2:#1C3328;
+    --bg-surface-3:#21392D;
+    --hairline:rgba(212,168,87,0.16);
+    --gold:#D4A857;
+    --gold-soft:#E8C988;
+    --celadon:#8FBFA0;
+    --celadon-dim:#5E8E72;
+    --coral:#E0876280;
+    --coral-solid:#E08762;
+    --text-primary:#F3EFE3;
+    --text-muted:#9FB3A8;
+    --text-faint:#6C8478;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(circle at 12% 0%, rgba(143,191,160,0.07), transparent 40%),
+      radial-gradient(circle at 90% 10%, rgba(212,168,87,0.06), transparent 45%),
+      var(--bg-base);
+    color:var(--text-primary);
+    font-family:'Sarabun',sans-serif;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1240px;margin:0 auto;padding:28px 22px 80px;}
+
+  /* ---------- header ---------- */
+  header{
+    display:flex;align-items:center;justify-content:space-between;
+    flex-wrap:wrap;gap:14px;
+    padding-bottom:22px;border-bottom:1px solid var(--hairline);margin-bottom:30px;
+  }
+  .brand{display:flex;align-items:center;gap:14px;}
+  .brand-mark{
+    width:42px;height:42px;border-radius:10px;
+    background:linear-gradient(145deg,var(--celadon) 0%,var(--celadon-dim) 100%);
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Taviraj',serif;font-weight:700;color:#0F1E18;font-size:19px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);
+  }
+  .brand-text h1{font-family:'Taviraj',serif;font-weight:600;font-size:22px;margin:0;letter-spacing:.2px;}
+  .brand-text p{margin:2px 0 0;font-size:12.5px;color:var(--text-muted);}
+  .status{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--text-muted);}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--celadon);box-shadow:0 0 0 0 rgba(143,191,160,0.7);animation:pulse 2s infinite;}
+  @keyframes pulse{
+    0%{box-shadow:0 0 0 0 rgba(143,191,160,0.55);}
+    70%{box-shadow:0 0 0 7px rgba(143,191,160,0);}
+    100%{box-shadow:0 0 0 0 rgba(143,191,160,0);}
+  }
+  .refresh-btn{
+    background:var(--bg-surface-2);border:1px solid var(--hairline);color:var(--gold-soft);
+    font-family:'Sarabun';font-size:12.5px;padding:7px 14px;border-radius:20px;cursor:pointer;
+    transition:.2s;
+  }
+  .refresh-btn:hover{background:var(--bg-surface-3);}
+
+  /* ---------- hero ---------- */
+  .hero{
+    display:grid;grid-template-columns:1.3fr 1fr;gap:22px;margin-bottom:26px;
+  }
+  @media(max-width:880px){.hero{grid-template-columns:1fr;}}
+  .hero-card{
+    background:linear-gradient(160deg,var(--bg-surface-2) 0%, var(--bg-surface) 100%);
+    border:1px solid var(--hairline);border-radius:var(--radius);
+    padding:28px 30px;position:relative;overflow:hidden;
+  }
+  .hero-card::after{
+    content:"";position:absolute;right:-60px;top:-60px;width:220px;height:220px;border-radius:50%;
+    background:radial-gradient(circle,rgba(212,168,87,0.13),transparent 70%);
+  }
+  .eyebrow{font-size:11.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold-soft);font-weight:600;}
+  .hero-num{
+    font-family:'Taviraj',serif;font-weight:600;font-size:54px;line-height:1.05;margin:10px 0 4px;
+    color:var(--text-primary);
+  }
+  .hero-num small{font-size:22px;color:var(--text-muted);font-weight:400;margin-left:4px;}
+  .hero-sub{font-size:13px;color:var(--text-muted);}
+  #sparkline{width:100%;height:64px;margin-top:14px;}
+
+  .mini-stack{display:flex;flex-direction:column;gap:14px;}
+  .mini-card{
+    flex:1;background:var(--bg-surface);border:1px solid var(--hairline);border-radius:var(--radius);
+    padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:10px;
+  }
+  .mini-card .label{font-size:12.5px;color:var(--text-muted);}
+  .mini-card .value{font-family:'IBM Plex Mono',monospace;font-size:21px;font-weight:600;color:var(--text-primary);}
+  .mini-card .value.gold{color:var(--gold-soft);}
+  .mini-card .value.celadon{color:var(--celadon);}
+
+  /* ---------- KPI row ---------- */
+  .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:26px;}
+  @media(max-width:880px){.kpi-row{grid-template-columns:repeat(2,1fr);}}
+  @media(max-width:480px){.kpi-row{grid-template-columns:1fr;}}
+  .kpi{
+    background:var(--bg-surface);border:1px solid var(--hairline);border-radius:var(--radius);
+    padding:18px 20px;
+  }
+  .kpi .label{font-size:12px;color:var(--text-muted);margin-bottom:8px;}
+  .kpi .num{font-family:'IBM Plex Mono',monospace;font-size:24px;font-weight:600;}
+  .kpi .sub{font-size:11.5px;color:var(--text-faint);margin-top:6px;}
+
+  /* ---------- signature: shipping ledger scale ---------- */
+  .section-title{
+    font-family:'Taviraj',serif;font-size:19px;font-weight:600;margin:0 0 4px;display:flex;align-items:baseline;gap:10px;
+  }
+  .section-title .num-mark{color:var(--gold-soft);font-family:'IBM Plex Mono';font-size:13px;}
+  .section-desc{font-size:12.5px;color:var(--text-muted);margin:0 0 18px;}
+
+  .ledger{
+    background:var(--bg-surface);border:1px solid var(--hairline);border-radius:var(--radius);
+    padding:24px 26px;margin-bottom:26px;
+  }
+  .ledger-row{
+    display:grid;grid-template-columns:120px 1fr 90px;gap:14px;align-items:center;
+    padding:10px 0;border-bottom:1px dashed var(--hairline);
+  }
+  .ledger-row:last-child{border-bottom:none;}
+  .ledger-row .courier-name{font-size:13.5px;font-weight:500;}
+  .ledger-row .courier-count{font-size:11px;color:var(--text-faint);}
+  .bar-track{position:relative;height:20px;background:var(--bg-surface-2);border-radius:6px;overflow:hidden;}
+  .bar-fill-collect{position:absolute;top:0;left:0;height:100%;background:linear-gradient(90deg,var(--celadon-dim),var(--celadon));border-radius:6px 0 0 6px;}
+  .bar-fill-paid{position:absolute;top:0;left:0;height:100%;background:repeating-linear-gradient(45deg,rgba(224,135,98,0.55) 0,rgba(224,135,98,0.55) 4px,rgba(224,135,98,0.85) 4px,rgba(224,135,98,0.85) 8px);border-radius:6px 0 0 6px;}
+  .ledger-row .margin-val{font-family:'IBM Plex Mono';font-size:13.5px;text-align:right;}
+  .ledger-legend{display:flex;gap:20px;margin-top:16px;font-size:11.5px;color:var(--text-muted);}
+  .ledger-legend span{display:flex;align-items:center;gap:6px;}
+  .lg-swatch{width:10px;height:10px;border-radius:3px;display:inline-block;}
+
+  /* ---------- chart ---------- */
+  .chart-card{
+    background:var(--bg-surface);border:1px solid var(--hairline);border-radius:var(--radius);
+    padding:24px 26px;margin-bottom:26px;
+  }
+  #trendChart{max-height:280px;}
+
+  /* ---------- table ---------- */
+  .table-card{
+    background:var(--bg-surface);border:1px solid var(--hairline);border-radius:var(--radius);
+    padding:24px 26px;
+  }
+  .table-controls{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;}
+  .table-controls input,.table-controls select{
+    background:var(--bg-surface-2);border:1px solid var(--hairline);color:var(--text-primary);
+    font-family:'Sarabun';font-size:13px;padding:9px 13px;border-radius:9px;outline:none;
+  }
+  .table-controls input::placeholder{color:var(--text-faint);}
+  .table-controls input{flex:1;min-width:160px;}
+  .table-scroll{overflow-x:auto;border-radius:10px;}
+  table{width:100%;border-collapse:collapse;font-size:13px;min-width:760px;}
+  thead th{
+    text-align:left;font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--gold-soft);
+    font-weight:600;padding:10px 12px;border-bottom:1px solid var(--hairline);white-space:nowrap;
+    cursor:pointer;user-select:none;
+  }
+  thead th:hover{color:var(--text-primary);}
+  tbody td{padding:10px 12px;border-bottom:1px solid rgba(212,168,87,0.08);white-space:nowrap;color:var(--text-primary);}
+  tbody tr:hover{background:rgba(143,191,160,0.05);}
+  .num-cell{font-family:'IBM Plex Mono',monospace;text-align:right;}
+  .pos{color:var(--celadon);}
+  .tag-pill{
+    display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;
+    background:var(--bg-surface-2);color:var(--text-muted);border:1px solid var(--hairline);
+  }
+  .table-foot{display:flex;justify-content:space-between;align-items:center;margin-top:14px;font-size:11.5px;color:var(--text-faint);}
+
+  footer{text-align:center;font-size:11.5px;color:var(--text-faint);margin-top:40px;}
+  footer a{color:var(--gold-soft);text-decoration:none;}
+
+  .loading-row{padding:40px;text-align:center;color:var(--text-muted);font-size:13px;}
+  .err-banner{
+    background:rgba(224,135,98,0.12);border:1px solid rgba(224,135,98,0.4);color:var(--coral-solid);
+    padding:12px 16px;border-radius:10px;font-size:12.5px;margin-bottom:20px;display:none;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="brand-mark">ร</div>
+      <div class="brand-text">
+        <h1>บัญชีร้าน</h1>
+        <p>แดชบอร์ดยอดขาย · ค่าส่ง · กำไร แบบเรียลไทม์</p>
+      </div>
+    </div>
+    <div class="status">
+      <span class="dot"></span>
+      <span id="lastUpdated">กำลังเชื่อมต่อ…</span>
+      <button class="refresh-btn" onclick="loadData()">รีเฟรชตอนนี้</button>
+    </div>
+  </header>
+
+  <div class="err-banner" id="errBanner"></div>
+
+  <section class="hero">
+    <div class="hero-card">
+      <div class="eyebrow">ยอดขายรวมทั้งหมด</div>
+      <div class="hero-num" id="heroSales">฿0<small>บาท</small></div>
+      <div class="hero-sub" id="heroSubText">จาก 0 ออเดอร์ · เฉลี่ย ฿0 / ออเดอร์</div>
+      <canvas id="sparkline"></canvas>
+    </div>
+    <div class="mini-stack">
+      <div class="mini-card">
+        <div><div class="label">กำไรรวม</div></div>
+        <div class="value celadon" id="miniProfit">฿0</div>
+      </div>
+      <div class="mini-card">
+        <div><div class="label">ค่าส่งที่เก็บลูกค้า</div></div>
+        <div class="value gold" id="miniCollected">฿0</div>
+      </div>
+      <div class="mini-card">
+        <div><div class="label">ค่าส่งที่จ่ายจริง</div></div>
+        <div class="value" id="miniPaid">฿0</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="kpi-row">
+    <div class="kpi">
+      <div class="label">จำนวนออเดอร์</div>
+      <div class="num" id="kpiOrders">0</div>
+      <div class="sub">นับทุกรายการในชีต</div>
+    </div>
+    <div class="kpi">
+      <div class="label">จำนวนสินค้ารวม</div>
+      <div class="num" id="kpiQty">0</div>
+      <div class="sub">รวมจำนวนชิ้นทุกออเดอร์</div>
+    </div>
+    <div class="kpi">
+      <div class="label">ส่วนลดรวมที่ให้ลูกค้า</div>
+      <div class="num" id="kpiDiscount">฿0</div>
+      <div class="sub">รวมคอลัมน์ส่วนลดรวม</div>
+    </div>
+    <div class="kpi">
+      <div class="label">ส่วนต่างค่าส่ง (เก็บ−จ่ายจริง)</div>
+      <div class="num" id="kpiShipMargin">฿0</div>
+      <div class="sub">บวก = เก็บมากกว่าที่จ่ายขนส่ง</div>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="section-title"><span class="num-mark">①</span> ตราชั่งค่าส่ง รายขนส่ง</h2>
+    <p class="section-desc">เทียบค่าส่งที่เก็บจากลูกค้า กับค่าส่งที่ร้านจ่ายจริงให้บริษัทขนส่ง — แยกตามผู้ให้บริการ</p>
+    <div class="ledger" id="ledgerBox">
+      <div class="loading-row">กำลังโหลดข้อมูล…</div>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="section-title"><span class="num-mark">②</span> แนวโน้มยอดขาย &amp; กำไร</h2>
+    <p class="section-desc">รวมยอดขายและกำไรเป็นรายวัน ตามวันที่สร้างออเดอร์</p>
+    <div class="chart-card">
+      <canvas id="trendChart"></canvas>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="section-title"><span class="num-mark">③</span> รายการออเดอร์ทั้งหมด</h2>
+    <p class="section-desc">ค้นหา กรองตามขนส่งหรือจังหวัด และคลิกหัวตารางเพื่อจัดเรียง</p>
+    <div class="table-card">
+      <div class="table-controls">
+        <input type="text" id="searchInput" placeholder="ค้นหาเลขออเดอร์ / ชื่อลูกค้า…">
+        <select id="filterCourier"><option value="">ขนส่งทั้งหมด</option></select>
+        <select id="filterProvince"><option value="">จังหวัดทั้งหมด</option></select>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th data-key="order">เลขที่ออเดอร์</th>
+              <th data-key="name">ชื่อลูกค้า</th>
+              <th data-key="courier">ขนส่ง</th>
+              <th data-key="province">จังหวัด</th>
+              <th data-key="date">วันที่สร้าง</th>
+              <th data-key="qty" style="text-align:right">จำนวน</th>
+              <th data-key="shipCollect" style="text-align:right">ค่าส่งเก็บ</th>
+              <th data-key="shipPaid" style="text-align:right">ค่าส่งจ่ายจริง</th>
+              <th data-key="sales" style="text-align:right">ยอดขาย</th>
+              <th data-key="profit" style="text-align:right">กำไร</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody">
+            <tr><td colspan="10" class="loading-row">กำลังโหลดข้อมูล…</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="table-foot">
+        <span id="rowCountLabel">0 รายการ</span>
+        <span>อัปเดตอัตโนมัติทุก 30 วินาที</span>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    ข้อมูลดึงจาก Google ชีต “บัญชีร้าน” โดยตรงแบบเรียลไทม์ — ไม่มีการบันทึกข้อมูลซ้ำที่อื่น
+  </footer>
+</div>
+
+<script>
+const SHEET_ID = '1oidANBg4aXFN4WuefWM5zN8-jsJK3VjuD_m3k1GQIYI';
+const SHEET_NAME = 'ชีต1';
+const GVIZ_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(SHEET_NAME)}`;
+
+let rawRows = [];
+let sortState = { key: 'date', dir: 'desc' };
+let trendChartInstance = null;
+let sparkInstance = null;
+
+const fmtBaht = n => '฿' + Math.round(n).toLocaleString('th-TH');
+const fmtNum = n => Math.round(n).toLocaleString('th-TH');
+
+function parseGviz(text){
+  const match = text.match(/setResponse\(([\s\S]*)\);?\s*$/);
+  if(!match) throw new Error('รูปแบบข้อมูลไม่ถูกต้อง');
+  return JSON.parse(match[1]);
+}
+
+function cellValue(cell){
+  if(!cell) return null;
+  let v = cell.v;
+  if(typeof v === 'string' && v.startsWith('Date(')){
+    const parts = v.match(/Date\(([^)]+)\)/)[1].split(',').map(Number);
+    return new Date(parts[0], parts[1], parts[2], parts[3]||0, parts[4]||0, parts[5]||0);
+  }
+  return v;
+}
+
+async function loadData(){
+  document.getElementById('errBanner').style.display = 'none';
+  try{
+    const res = await fetch(GVIZ_URL + '&_=' + Date.now(), { cache: 'no-store' });
+    if(!res.ok) throw new Error('เชื่อมต่อชีตไม่สำเร็จ (HTTP ' + res.status + ')');
+    const text = await res.text();
+    const json = parseGviz(text);
+    const cols = json.table.cols;
+    const rows = json.table.rows;
+
+    // column index map based on known header order
+    const idx = { order:0, name:1, courier:5, shipCollect:6, province:7, shipPaid:10, date:13, qty:19, sales:20, profit:21, discount:18 };
+
+    rawRows = rows
+      .map(r => {
+        const c = r.c;
+        const orderNo = cellValue(c[idx.order]);
+        if(!orderNo) return null;
+        return {
+          order: orderNo,
+          name: cellValue(c[idx.name]) || '-',
+          courier: cellValue(c[idx.courier]) || '-',
+          shipCollect: Number(cellValue(c[idx.shipCollect])) || 0,
+          province: cellValue(c[idx.province]) || '-',
+          shipPaid: Number(cellValue(c[idx.shipPaid])) || 0,
+          date: cellValue(c[idx.date]),
+          qty: Number(cellValue(c[idx.qty])) || 0,
+          sales: Number(cellValue(c[idx.sales])) || 0,
+          profit: Number(cellValue(c[idx.profit])) || 0,
+          discount: Number(cellValue(c[idx.discount])) || 0
+        };
+      })
+      .filter(Boolean);
+
+    render();
+    document.getElementById('lastUpdated').textContent = 'อัปเดตล่าสุด ' + new Date().toLocaleTimeString('th-TH');
+  }catch(err){
+    const banner = document.getElementById('errBanner');
+    banner.textContent = 'โหลดข้อมูลไม่สำเร็จ: ' + err.message + ' — ตรวจสอบว่าชีตเปิดสิทธิ์ "ทุกคนที่มีลิงก์ดูได้"';
+    banner.style.display = 'block';
+  }
+}
+
+function render(){
+  renderHero();
+  renderKpis();
+  renderLedger();
+  renderTrend();
+  populateFilters();
+  renderTable();
+}
+
+function renderHero(){
+  const totalSales = rawRows.reduce((s,r)=>s+r.sales,0);
+  const totalProfit = rawRows.reduce((s,r)=>s+r.profit,0);
+  const totalCollect = rawRows.reduce((s,r)=>s+r.shipCollect,0);
+  const totalPaid = rawRows.reduce((s,r)=>s+r.shipPaid,0);
+  const orders = rawRows.length;
+  const avg = orders ? totalSales/orders : 0;
+
+  document.getElementById('heroSales').innerHTML = fmtBaht(totalSales) + '<small>บาท</small>';
+  document.getElementById('heroSubText').textContent = `จาก ${fmtNum(orders)} ออเดอร์ · เฉลี่ย ${fmtBaht(avg)} / ออเดอร์`;
+  document.getElementById('miniProfit').textContent = fmtBaht(totalProfit);
+  document.getElementById('miniCollected').textContent = fmtBaht(totalCollect);
+  document.getElementById('miniPaid').textContent = fmtBaht(totalPaid);
+
+  // sparkline: sales per day, last 14 days with data
+  const byDay = {};
+  rawRows.forEach(r=>{
+    if(!r.date) return;
+    const key = r.date.toISOString().slice(0,10);
+    byDay[key] = (byDay[key]||0) + r.sales;
+  });
+  const days = Object.keys(byDay).sort().slice(-14);
+  const vals = days.map(d=>byDay[d]);
+
+  const ctx = document.getElementById('sparkline').getContext('2d');
+  if(sparkInstance) sparkInstance.destroy();
+  sparkInstance = new Chart(ctx, {
+    type:'line',
+    data:{ labels:days, datasets:[{ data:vals, borderColor:'#D4A857', backgroundColor:'rgba(212,168,87,0.12)',
+      fill:true, tension:0.35, pointRadius:0, borderWidth:2 }]},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}, tooltip:{enabled:false}},
+      scales:{ x:{display:false}, y:{display:false} },
+      elements:{point:{radius:0}}
+    }
+  });
+}
+
+function renderKpis(){
+  const orders = rawRows.length;
+  const qty = rawRows.reduce((s,r)=>s+r.qty,0);
+  const discount = rawRows.reduce((s,r)=>s+r.discount,0);
+  const shipMargin = rawRows.reduce((s,r)=>s+(r.shipCollect-r.shipPaid),0);
+
+  document.getElementById('kpiOrders').textContent = fmtNum(orders);
+  document.getElementById('kpiQty').textContent = fmtNum(qty);
+  document.getElementById('kpiDiscount').textContent = fmtBaht(discount);
+  const shipEl = document.getElementById('kpiShipMargin');
+  shipEl.textContent = fmtBaht(shipMargin);
+  shipEl.style.color = shipMargin >= 0 ? 'var(--celadon)' : 'var(--coral-solid)';
+}
+
+function renderLedger(){
+  const map = {};
+  rawRows.forEach(r=>{
+    const k = r.courier || 'ไม่ระบุ';
+    if(!map[k]) map[k] = { collect:0, paid:0, count:0 };
+    map[k].collect += r.shipCollect;
+    map[k].paid += r.shipPaid;
+    map[k].count += 1;
+  });
+  const couriers = Object.entries(map).sort((a,b)=>b[1].collect - a[1].collect);
+  const maxVal = Math.max(...couriers.map(c=>Math.max(c[1].collect, c[1].paid)), 1);
+
+  const box = document.getElementById('ledgerBox');
+  box.innerHTML = '';
+  couriers.forEach(([name, d])=>{
+    const margin = d.collect - d.paid;
+    const row = document.createElement('div');
+    row.className = 'ledger-row';
+    row.innerHTML = `
+      <div><div class="courier-name">${name}</div><div class="courier-count">${d.count} ออเดอร์</div></div>
+      <div class="bar-track">
+        <div class="bar-fill-collect" style="width:${(d.collect/maxVal*100).toFixed(1)}%"></div>
+      </div>
+      <div class="margin-val" style="color:${margin>=0?'var(--celadon)':'var(--coral-solid)'}">${fmtBaht(margin)}</div>
+    `;
+    box.appendChild(row);
+    const row2 = document.createElement('div');
+    row2.className = 'ledger-row';
+    row2.style.paddingTop = '0';
+    row2.innerHTML = `
+      <div></div>
+      <div class="bar-track" style="height:8px;opacity:.8;">
+        <div class="bar-fill-paid" style="width:${(d.paid/maxVal*100).toFixed(1)}%"></div>
+      </div>
+      <div></div>
+    `;
+    box.appendChild(row2);
+  });
+  box.insertAdjacentHTML('beforeend', `
+    <div class="ledger-legend">
+      <span><span class="lg-swatch" style="background:var(--celadon);"></span>ค่าส่งที่เก็บลูกค้า</span>
+      <span><span class="lg-swatch" style="background:var(--coral-solid);opacity:.7;"></span>ค่าส่งที่จ่ายจริง</span>
+    </div>
+  `);
+}
+
+function renderTrend(){
+  const byDay = {};
+  rawRows.forEach(r=>{
+    if(!r.date) return;
+    const key = r.date.toISOString().slice(0,10);
+    if(!byDay[key]) byDay[key] = { sales:0, profit:0 };
+    byDay[key].sales += r.sales;
+    byDay[key].profit += r.profit;
+  });
+  const days = Object.keys(byDay).sort();
+  const sales = days.map(d=>byDay[d].sales);
+  const profit = days.map(d=>byDay[d].profit);
+  const labels = days.map(d=> {
+    const dt = new Date(d);
+    return dt.toLocaleDateString('th-TH', { day:'2-digit', month:'short' });
+  });
+
+  const ctx = document.getElementById('trendChart').getContext('2d');
+  if(trendChartInstance) trendChartInstance.destroy();
+  trendChartInstance = new Chart(ctx, {
+    type:'bar',
+    data:{
+      labels,
+      datasets:[
+        { type:'bar', label:'ยอดขาย', data:sales, backgroundColor:'rgba(212,168,87,0.55)', borderRadius:4, order:2 },
+        { type:'line', label:'กำไร', data:profit, borderColor:'#8FBFA0', backgroundColor:'transparent', tension:0.35, pointRadius:2, borderWidth:2, order:1 }
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      interaction:{ mode:'index', intersect:false },
+      plugins:{
+        legend:{ labels:{ color:'#9FB3A8', font:{family:'Sarabun'} } },
+        tooltip:{ callbacks:{ label: ctx => ctx.dataset.label + ': ' + fmtBaht(ctx.parsed.y) } }
+      },
+      scales:{
+        x:{ ticks:{ color:'#6C8478', font:{family:'Sarabun', size:11} }, grid:{ display:false } },
+        y:{ ticks:{ color:'#6C8478', font:{family:'IBM Plex Mono', size:10}, callback:v=>'฿'+v.toLocaleString('th-TH') }, grid:{ color:'rgba(212,168,87,0.08)' } }
+      }
+    }
+  });
+}
+
+function populateFilters(){
+  const courierSel = document.getElementById('filterCourier');
+  const provinceSel = document.getElementById('filterProvince');
+  const prevCourier = courierSel.value, prevProvince = provinceSel.value;
+
+  const couriers = [...new Set(rawRows.map(r=>r.courier))].sort();
+  const provinces = [...new Set(rawRows.map(r=>r.province))].sort();
+
+  courierSel.innerHTML = '<option value="">ขนส่งทั้งหมด</option>' + couriers.map(c=>`<option value="${c}">${c}</option>`).join('');
+  provinceSel.innerHTML = '<option value="">จังหวัดทั้งหมด</option>' + provinces.map(p=>`<option value="${p}">${p}</option>`).join('');
+  courierSel.value = prevCourier; provinceSel.value = prevProvince;
+}
+
+function renderTable(){
+  const search = document.getElementById('searchInput').value.trim().toLowerCase();
+  const courierF = document.getElementById('filterCourier').value;
+  const provinceF = document.getElementById('filterProvince').value;
+
+  let filtered = rawRows.filter(r=>{
+    if(courierF && r.courier !== courierF) return false;
+    if(provinceF && r.province !== provinceF) return false;
+    if(search && !(String(r.order).toLowerCase().includes(search) || r.name.toLowerCase().includes(search))) return false;
+    return true;
+  });
+
+  filtered.sort((a,b)=>{
+    let av = a[sortState.key], bv = b[sortState.key];
+    if(sortState.key === 'date'){ av = av?av.getTime():0; bv = bv?bv.getTime():0; }
+    if(typeof av === 'string'){ av = av.toLowerCase(); bv = (bv||'').toLowerCase(); }
+    if(av < bv) return sortState.dir === 'asc' ? -1 : 1;
+    if(av > bv) return sortState.dir === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  const tbody = document.getElementById('tableBody');
+  if(filtered.length === 0){
+    tbody.innerHTML = '<tr><td colspan="10" class="loading-row">ไม่พบรายการที่ตรงกับการค้นหา</td></tr>';
+  }else{
+    tbody.innerHTML = filtered.map(r=>`
+      <tr>
+        <td><span class="tag-pill">${r.order}</span></td>
+        <td>${r.name}</td>
+        <td>${r.courier}</td>
+        <td>${r.province}</td>
+        <td>${r.date ? r.date.toLocaleDateString('th-TH',{day:'2-digit',month:'2-digit',year:'numeric'}) : '-'}</td>
+        <td class="num-cell">${fmtNum(r.qty)}</td>
+        <td class="num-cell">${fmtBaht(r.shipCollect)}</td>
+        <td class="num-cell">${fmtBaht(r.shipPaid)}</td>
+        <td class="num-cell">${fmtBaht(r.sales)}</td>
+        <td class="num-cell pos">${fmtBaht(r.profit)}</td>
+      </tr>
+    `).join('');
+  }
+  document.getElementById('rowCountLabel').textContent = `${fmtNum(filtered.length)} รายการ`;
+}
+
+document.getElementById('searchInput').addEventListener('input', renderTable);
+document.getElementById('filterCourier').addEventListener('change', renderTable);
+document.getElementById('filterProvince').addEventListener('change', renderTable);
+document.querySelectorAll('thead th').forEach(th=>{
+  th.addEventListener('click', ()=>{
+    const key = th.dataset.key;
+    if(sortState.key === key) sortState.dir = sortState.dir === 'asc' ? 'desc' : 'asc';
+    else { sortState.key = key; sortState.dir = 'desc'; }
+    renderTable();
+  });
+});
+
+loadData();
+setInterval(loadData, 30000);
+</script>
+</body>
+</html>
