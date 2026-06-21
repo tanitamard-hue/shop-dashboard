@@ -6,7 +6,17 @@
 <title>บัญชีร้าน · แดชบอร์ดยอดขาย</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Taviraj:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+  // fallback in case jsDelivr is blocked
+  window.addEventListener('error', function(e){
+    if(e.target && e.target.tagName === 'SCRIPT' && e.target.src.includes('chart.umd')){
+      var s = document.createElement('script');
+      s.src = 'https://unpkg.com/chart.js@4.4.4/dist/chart.umd.min.js';
+      document.head.appendChild(s);
+    }
+  }, true);
+</script>
 <style>
   :root{
     --bg-base:#0F1E18;
@@ -185,6 +195,34 @@
     background:rgba(224,135,98,0.12);border:1px solid rgba(224,135,98,0.4);color:var(--coral-solid);
     padding:12px 16px;border-radius:10px;font-size:12.5px;margin-bottom:20px;display:none;
   }
+
+  /* ---------- monthly profit selector ---------- */
+  .month-card{
+    background:linear-gradient(160deg,var(--bg-surface-2) 0%, var(--bg-surface) 100%);
+    border:1px solid var(--hairline);border-radius:var(--radius);
+    padding:24px 26px;margin-bottom:18px;
+  }
+  .month-card-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:6px;}
+  .month-card-top select{
+    background:var(--bg-surface-2);border:1px solid var(--hairline);color:var(--text-primary);
+    font-family:'Sarabun';font-size:13.5px;padding:9px 16px;border-radius:9px;outline:none;cursor:pointer;
+  }
+  .month-eyebrow{font-family:'Taviraj',serif;font-size:15px;color:var(--gold-soft);}
+  .month-hero-num{font-family:'Taviraj',serif;font-weight:600;font-size:42px;color:var(--text-primary);margin:8px 0 2px;}
+  .month-sub{font-size:12px;color:var(--text-muted);margin-bottom:18px;}
+  .month-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;}
+  @media(max-width:980px){.month-grid{grid-template-columns:repeat(3,1fr);}}
+  @media(max-width:560px){.month-grid{grid-template-columns:repeat(2,1fr);}}
+  .month-grid > div{background:var(--bg-surface);border:1px solid var(--hairline);border-radius:10px;padding:12px 14px;}
+  .month-grid .label{display:block;font-size:11px;color:var(--text-muted);margin-bottom:4px;}
+  .month-grid .val{display:block;font-family:'IBM Plex Mono',monospace;font-size:16.5px;font-weight:600;}
+  .month-grid .val.gold{color:var(--gold-soft);}
+  .month-grid .val.celadon{color:var(--celadon);}
+  .month-table-wrap{background:var(--bg-surface);border:1px solid var(--hairline);border-radius:var(--radius);padding:18px 22px;overflow-x:auto;}
+  table.month-compare{width:100%;border-collapse:collapse;font-size:13px;min-width:420px;}
+  table.month-compare thead th{text-align:left;font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:var(--gold-soft);font-weight:600;padding:8px 10px;border-bottom:1px solid var(--hairline);}
+  table.month-compare tbody td{padding:9px 10px;border-bottom:1px solid rgba(212,168,87,0.08);}
+  table.month-compare tbody tr:hover{background:rgba(143,191,160,0.06);cursor:pointer;}
 </style>
 </head>
 <body>
@@ -270,7 +308,41 @@
   </section>
 
   <section>
-    <h2 class="section-title"><span class="num-mark">③</span> รายการออเดอร์ทั้งหมด</h2>
+    <h2 class="section-title"><span class="num-mark">③</span> กำไรรายเดือน หลังหักค่าใช้จ่าย</h2>
+    <p class="section-desc">เลือกเดือนเพื่อดูกำไรสุทธิ — ระบบหักค่าจ้างรถเพิ่มอัตโนมัติทุกวันจันทร์ จันทร์ละ 1,500 บาท ตามจำนวนวันจันทร์ในเดือนนั้น (สำหรับเดือนที่ยังไม่จบ จะนับวันจันทร์ทั้งหมดในเดือนตามปฏิทิน) คลิกแถวในตารางเพื่อสลับเดือนได้</p>
+    <div class="month-card">
+      <div class="month-card-top">
+        <select id="monthPicker"></select>
+        <div class="month-eyebrow" id="monthLabel">-</div>
+      </div>
+      <div class="month-hero-num" id="monthNetProfit">฿0</div>
+      <div class="month-sub">กำไรสุทธิหลังหักค่าใช้จ่ายเพิ่มเติม · ก่อนหักอยู่ที่ <strong id="monthProfit">฿0</strong></div>
+      <div class="month-grid">
+        <div><span class="label">ยอดขาย</span><span class="val" id="monthSales">฿0</span></div>
+        <div><span class="label">ค่าส่งที่เก็บลูกค้า</span><span class="val gold" id="monthShipCollect">฿0</span></div>
+        <div><span class="label">ค่าส่งที่จ่ายจริง</span><span class="val" id="monthShipPaid">฿0</span></div>
+        <div><span class="label">ส่วนต่างค่าส่ง</span><span class="val celadon" id="monthShipMargin">฿0</span></div>
+        <div><span class="label">ค่าจ้างรถเพิ่ม (จ.×1,500)</span><span class="val" id="monthExtraCost">฿0</span></div>
+        <div><span class="label">จำนวนออเดอร์</span><span class="val" id="monthOrders">0</span></div>
+      </div>
+    </div>
+    <div class="month-table-wrap">
+      <table class="month-compare">
+        <thead><tr>
+          <th>เดือน</th>
+          <th style="text-align:right">ออเดอร์</th>
+          <th style="text-align:right">ยอดขาย</th>
+          <th style="text-align:right">กำไร (ก่อนหัก)</th>
+          <th style="text-align:right">ค่าจ้างรถ</th>
+          <th style="text-align:right">กำไรหลังหักค่าใช้จ่าย</th>
+        </tr></thead>
+        <tbody id="monthlyTableBody"><tr><td colspan="6" class="loading-row">กำลังโหลดข้อมูล…</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="section-title"><span class="num-mark">④</span> รายการออเดอร์ทั้งหมด</h2>
     <p class="section-desc">ค้นหา กรองตามขนส่งหรือจังหวัด และคลิกหัวตารางเพื่อจัดเรียง</p>
     <div class="table-card">
       <div class="table-controls">
@@ -388,8 +460,99 @@ function render(){
   renderKpis();
   renderLedger();
   renderTrend();
+  renderMonthly();
   populateFilters();
   renderTable();
+}
+
+const THAI_MONTHS = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+const MONDAY_FEE = 1500;
+function monthKeyOf(date){ return date.getFullYear() + '-' + String(date.getMonth()+1).padStart(2,'0'); }
+function monthLabelOf(key){
+  const [y,m] = key.split('-').map(Number);
+  return `${THAI_MONTHS[m-1]} ${y+543}`;
+}
+function countMondaysInMonth(year, monthIndex0){
+  let count = 0;
+  const d = new Date(year, monthIndex0, 1);
+  while(d.getMonth() === monthIndex0){
+    if(d.getDay() === 1) count++;
+    d.setDate(d.getDate() + 1);
+  }
+  return count;
+}
+
+function renderMonthly(){
+  const map = {};
+  rawRows.forEach(r=>{
+    if(!r.date) return;
+    const key = monthKeyOf(r.date);
+    if(!map[key]) map[key] = { sales:0, profit:0, shipCollect:0, shipPaid:0, orders:0 };
+    map[key].sales += r.sales;
+    map[key].profit += r.profit;
+    map[key].shipCollect += r.shipCollect;
+    map[key].shipPaid += r.shipPaid;
+    map[key].orders += 1;
+  });
+  const keysDesc = Object.keys(map).sort().reverse();
+  const picker = document.getElementById('monthPicker');
+
+  if(keysDesc.length === 0){
+    picker.innerHTML = '<option value="">ไม่มีข้อมูล</option>';
+    document.getElementById('monthlyTableBody').innerHTML = '<tr><td colspan="6" class="loading-row">ไม่มีข้อมูล</td></tr>';
+    return;
+  }
+
+  const prevVal = picker.value;
+  picker.innerHTML = keysDesc.map(k=>`<option value="${k}">${monthLabelOf(k)}</option>`).join('');
+  picker.value = (prevVal && map[prevVal]) ? prevVal : keysDesc[0];
+
+  const sel = picker.value;
+  const d = map[sel];
+  const [selY, selM] = sel.split('-').map(Number);
+  const shipMargin = d.shipCollect - d.shipPaid;
+  const mondays = countMondaysInMonth(selY, selM - 1);
+  const extraCost = mondays * MONDAY_FEE;
+  const netProfit = d.profit - extraCost;
+
+  document.getElementById('monthLabel').textContent = monthLabelOf(sel);
+  document.getElementById('monthProfit').textContent = fmtBaht(d.profit);
+  document.getElementById('monthSales').textContent = fmtBaht(d.sales);
+  document.getElementById('monthShipCollect').textContent = fmtBaht(d.shipCollect);
+  document.getElementById('monthShipPaid').textContent = fmtBaht(d.shipPaid);
+  const marginEl = document.getElementById('monthShipMargin');
+  marginEl.textContent = fmtBaht(shipMargin);
+  marginEl.style.color = shipMargin >= 0 ? 'var(--celadon)' : 'var(--coral-solid)';
+  document.getElementById('monthExtraCost').textContent = `−${fmtBaht(extraCost)} (${mondays} จ.)`;
+  document.getElementById('monthOrders').textContent = fmtNum(d.orders);
+
+  const netEl = document.getElementById('monthNetProfit');
+  netEl.innerHTML = fmtBaht(netProfit) + '<small style="font-size:18px;color:var(--text-muted);margin-left:6px;">บาท</small>';
+  netEl.style.color = netProfit >= 0 ? 'var(--text-primary)' : 'var(--coral-solid)';
+
+  const tbody = document.getElementById('monthlyTableBody');
+  tbody.innerHTML = keysDesc.map(k=>{
+    const md = map[k];
+    const [yy, mm] = k.split('-').map(Number);
+    const mdMondays = countMondaysInMonth(yy, mm - 1);
+    const mdExtra = mdMondays * MONDAY_FEE;
+    const mdNet = md.profit - mdExtra;
+    const highlight = k === sel ? 'background:rgba(143,191,160,0.08);' : '';
+    return `<tr data-month="${k}" style="${highlight}">
+      <td>${monthLabelOf(k)}</td>
+      <td class="num-cell">${fmtNum(md.orders)}</td>
+      <td class="num-cell">${fmtBaht(md.sales)}</td>
+      <td class="num-cell">${fmtBaht(md.profit)}</td>
+      <td class="num-cell">−${fmtBaht(mdExtra)}</td>
+      <td class="num-cell pos" style="color:${mdNet>=0?'var(--celadon)':'var(--coral-solid)'}">${fmtBaht(mdNet)}</td>
+    </tr>`;
+  }).join('');
+  tbody.querySelectorAll('tr[data-month]').forEach(tr=>{
+    tr.addEventListener('click', ()=>{
+      picker.value = tr.dataset.month;
+      renderMonthly();
+    });
+  });
 }
 
 function renderHero(){
@@ -416,6 +579,7 @@ function renderHero(){
   const days = Object.keys(byDay).sort().slice(-14);
   const vals = days.map(d=>byDay[d]);
 
+  if(typeof Chart === 'undefined'){ return; }
   const ctx = document.getElementById('sparkline').getContext('2d');
   if(sparkInstance) sparkInstance.destroy();
   sparkInstance = new Chart(ctx, {
@@ -508,6 +672,7 @@ function renderTrend(){
     return dt.toLocaleDateString('th-TH', { day:'2-digit', month:'short' });
   });
 
+  if(typeof Chart === 'undefined'){ return; }
   const ctx = document.getElementById('trendChart').getContext('2d');
   if(trendChartInstance) trendChartInstance.destroy();
   trendChartInstance = new Chart(ctx, {
@@ -590,6 +755,7 @@ function renderTable(){
   document.getElementById('rowCountLabel').textContent = `${fmtNum(filtered.length)} รายการ`;
 }
 
+document.getElementById('monthPicker').addEventListener('change', renderMonthly);
 document.getElementById('searchInput').addEventListener('input', renderTable);
 document.getElementById('filterCourier').addEventListener('change', renderTable);
 document.getElementById('filterProvince').addEventListener('change', renderTable);
